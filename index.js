@@ -51,3 +51,5 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     connectDB(); // استدعاء دالة الاتصال هنا
 });
+
+export default app;
