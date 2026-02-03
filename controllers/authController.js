@@ -2,7 +2,7 @@ import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-// Register Logic
+// 1. Register Logic
 export const register = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
@@ -18,7 +18,7 @@ export const register = async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            role: role || "user" // افتراضيًا يكون مستخدم عادي
+            role: role || "user"
         });
 
         res.status(201).json({ message: "User registered successfully" });
@@ -27,7 +27,31 @@ export const register = async (req, res) => {
     }
 };
 
-// Login Logic
+// 2. دالة حذف المستخدم (المعدلة)
+export const deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // إضافة فحص بسيط للتأكد من وجود ID
+        if (!id) {
+            return res.status(400).json({ message: "User ID is required" });
+        }
+
+        const deletedUser = await User.findByIdAndDelete(id);
+
+        if (!deletedUser) {
+            return res.status(404).json({ message: "Operator not found in Database" });
+        }
+
+        res.status(200).json({ message: "Operator deleted successfully" });
+    } catch (error) {
+        // طباعة الخطأ في Console الـ Railway عشان تعرف لو المشكلة من الـ MongoDB
+        console.error("Delete Error:", error);
+        res.status(500).json({ message: "System error during deletion", error: error.message });
+    }
+};
+
+// 3. Login Logic
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -44,7 +68,6 @@ export const login = async (req, res) => {
             { expiresIn: "1d" }
         );
 
-        // إخفاء الباسورد قبل إرسال بيانات المستخدم
         const { password: _, ...userWithoutPassword } = user._doc;
 
         res.json({
