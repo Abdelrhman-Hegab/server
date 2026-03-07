@@ -15,7 +15,8 @@ router.get("/profile", protect, (req, res) => {
     });
 });
 
-router.delete("/users/:id", deleteUser); // تأكد إنك ضايف حماية الـ Admin هنا لو حابب
+// لضمان أن المسئول فقط هو من يحذف
+router.delete("/users/:id", protect, authorize("admin"), deleteUser);
 
 // Protected route for Admins only
 router.get("/admin-only", protect, authorize("admin"), (req, res) => {

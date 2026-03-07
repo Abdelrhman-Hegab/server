@@ -12,8 +12,13 @@ dotenv.config();
 
 const app = express();
 
-// Middlewares
-app.use(cors());
+// --- تعديل 1: تحسين إعدادات CORS للسماح بجميع العمليات ---
+app.use(cors({
+    origin: "*", // يمكنك استبداله برابط Netlify لاحقاً لزيادة الأمان
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
 app.use(express.json());
 
 // Routes
@@ -27,29 +32,39 @@ app.get("/", (req, res) => {
     res.send("SISMS API is Running...");
 });
 
-// إعدادات اتصال MongoDB مع معالجة الأخطاء
+// --- تعديل 2: معالجة الأخطاء العامة (Global Error Handler) ---
+// هذا يمنع السيرفر من الانهيار عند حدوث خطأ غير متوقع
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ message: "Internal Server Error", error: err.message });
+});
+
+// إعدادات اتصال MongoDB
 const connectDB = async () => {
     try {
-        console.log("Attempting to connect to MongoDB...");
+        // التحقق من وجود URI قبل المحاولة
+        if (!process.env.MONGO_URI) {
+            throw new Error("MONGO_URI is missing in environment variables!");
+        }
 
+        console.log("Attempting to connect to MongoDB...");
         await mongoose.connect(process.env.MONGO_URI, {
-            // هذه الإعدادات تضمن أن السيرفر سيعطيك خطأ لو لم يتصل خلال 5 ثوانٍ
             serverSelectionTimeoutMS: 5000,
         });
 
         console.log("MongoDB Connected Successfully");
     } catch (err) {
-        console.error("MongoDB Connection Error:");
-        console.error(err.message);
-        // في حالة فشل الاتصال، لا نغلق السيرفر بل نتركه يحاول مرة أخرى عند الطلب
+        console.error("MongoDB Connection Error:", err.message);
+        // في بيئة الـ Production، يفضل الخروج إذا لم يتصل بقاعدة البيانات
+        // process.exit(1); 
     }
 };
 
-// تشغيل السيرفر والاتصال بالقاعدة
+// تشغيل السيرفر
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    connectDB(); // استدعاء دالة الاتصال هنا
+    connectDB();
 });
 
 export default app;
